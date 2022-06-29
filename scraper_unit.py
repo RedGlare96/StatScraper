@@ -306,3 +306,67 @@ class YoutubeScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Subscribers'] = 'N/A'
         self.save_into_file()
+
+
+class TiktokScraper(ScraperBase):
+
+    def __init__(self, url, outputpath):
+        super(TiktokScraper, self).__init__(url, outputpath, use_proxy=True)
+
+    def get_data(self):
+        self.logger.info('Starting scraping process')
+        self.driver.get(self.url)
+        time.sleep(5)
+        prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        try:
+            name = prod_soup.find('h2', {'class': 'tiktok-b7g450-H2ShareTitle ekmpd5l5'}).text
+            self.logger.debug('Name: {}'.format(name))
+            self.output['Name'] = name
+        except Exception as exc:
+            self.logger.error('Could not get data')
+            self.logger.debug('Details: {}'.format(str(exc)))
+            self.output['Name'] = 'N/A'
+        try:
+            followers = prod_soup.find_all('div', {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})[1].find('strong').text
+            self.logger.debug('Followers: {}'.format(followers))
+        except Exception as exc:
+            self.logger.error('Could not get data')
+            self.logger.debug('Details: {}'.format(str(exc)))
+            self.output['Followers'] = 'N/A'
+        try:
+            likes = prod_soup.find_all('div', {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})[2].find('strong').text
+            self.logger.debug('Likes: {}'.format(likes))
+            self.output['Likes'] = likes
+        except Exception as exc:
+            self.logger.error('Could not get data')
+            self.logger.debug('Details: {}'.format(str(exc)))
+            self.output['Likes'] = 'N/A'
+        self.save_into_file()
+
+
+class InstagramScraper(ScraperBase):
+
+    def __init__(self, url, outputpath):
+        super(InstagramScraper, self).__init__(url, outputpath, use_stealth=True)
+
+    def get_data(self):
+        self.logger.info('Starting scraping process')
+        self.driver.get(self.url)
+        time.sleep(5)
+        prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        try:
+            title = prod_soup.find('h2').text
+            self.logger.debug('Title: {}'.format(title))
+        except Exception as exc:
+            self.logger.error('Could not get data')
+            self.logger.debug('Details: {}'.format(str(exc)))
+            self.output['Title'] = 'N/A'
+        try:
+            followers = prod_soup.find_all('li', {'class': 'Y8-fY'})[1].find('span')['title']
+            self.logger.debug('Followers: {}'.format(followers))
+        except Exception as exc:
+            self.logger.error('Could not get data')
+            self.logger.debug('Details: {}'.format(str(exc)))
+            self.output['Followers'] = 'N/A'
+        self.save_into_file()
+
