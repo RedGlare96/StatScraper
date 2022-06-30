@@ -67,7 +67,7 @@ if __name__ == '__main__':
     else:
         cookie_file = 'chrome-data'
 
-    print('Initiating driver')
+    rootLogger.info('Initiating driver')
     options = uc.ChromeOptions()
     options.user_data_dir = cookie_file
     options.binary_location = bin_dir
@@ -91,6 +91,7 @@ if __name__ == '__main__':
         options.add_argument(
             f"--load-extension={os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plugin', 'zenmate')}")
     driver = uc.Chrome(headless=False, options=options, version_main=version_number)
+    rootLogger.debug('Setting up stealth')
     stealth(driver,
             languages=["en-US", "en"],
             vendor="Google Inc.",
@@ -106,6 +107,7 @@ if __name__ == '__main__':
             scrape_obj = None
             for scrape_ele in ScraperBase.__subclasses__():
                 if scrape_ele.get_keyword() in link_ele:
+                    rootLogger.info('{} website detected'.format(scrape_ele.get_keyword()))
                     scrape_obj = scrape_ele(link_ele, out_path, driver)
                     break
             if scrape_obj is not None:

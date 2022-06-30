@@ -1,7 +1,7 @@
 import time
 import logging
 from bs4 import BeautifulSoup
-from openpyxl import Workbook, load_workbook
+from openpyxl import Workbook, load_workbook, worksheet
 import os
 
 
@@ -38,10 +38,15 @@ class ScraperBase:
         '''
         Save data into file
         '''
-        logger = logging.getLogger(__name__ + 'SaveFile')
+        logger = logging.getLogger(__name__ + '.SaveFile')
         if os.path.isfile(self.outputpath):
             wb = load_workbook(self.outputpath)
-            ws = wb.active
+            # ws = wb.active
+            if self.get_keyword() not in wb.sheetnames:
+                logger.debug('Creating new sheet')
+                ws = wb.create_sheet(self.get_keyword())
+            else:
+                ws = wb[self.get_keyword()]
             next_row = len(ws['A']) + 1
             for index, value in enumerate(self.output.values()):
                 ws.cell(row=next_row, column=index + 1, value=value)
@@ -208,7 +213,7 @@ class TwitterScraper(ScraperBase):
     def get_data(self):
         self.logger.info('Starting scraping process')
         self.driver.get(self.url)
-        time.sleep(2)
+        time.sleep(5)
         prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         try:
             name = prod_soup.find_all('span', {'class': 'css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0'})[6].text
