@@ -1,10 +1,7 @@
-import random
 import time
 import logging
 from bs4 import BeautifulSoup
 from openpyxl import Workbook, load_workbook
-import undetected_chromedriver as uc
-from selenium_stealth import stealth
 import os
 
 
@@ -12,57 +9,29 @@ class ScraperBase:
 
     logger = logging.getLogger('ScraperCore')
 
-    def __init__(self, url, outputpath, single_process=False, use_proxy=False, use_stealth=False):
+    def __init__(self, url, outputpath, driver):
         self.url = url
-        self.single_process = single_process
-        self.use_proxy = use_proxy
-        self.use_stealth = use_stealth
-        self.driver = None
-        if not use_proxy:
-            self.cookie_file = 'chrome-data'
-        else:
-            self.cookie_file = 'zenmate-cookies'
-        self.bin_dir = 'chrome-bin/chrome.exe'
+        self.driver = driver
         self.outputpath = outputpath
         self.output = dict()
 
+    @staticmethod
+    def get_keyword():
+        return 'base'
+
     def get_data(self):
-        self.logger.error('Base method called')
+        raise Exception('Base method called')
 
     def run_browser(self):
-        self.logger.info('Init browser')
-        options = uc.ChromeOptions()
-        options.user_data_dir = self.cookie_file
-        options.binary_location = self.bin_dir
-        options.add_argument('--no-first-run --no-service-autorun --password-store=basic')
-        options.add_argument('--window-size={}'.format('1920,1080'))
-        options.add_argument('--disk-cache-size=1073741824')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--dns-prefetch-disable')
-        options.add_argument('--hide-scrollbars')
-        options.add_argument("--disable-infobars")
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-browser-side-navigation')
-        options.add_argument('--log-level=0')
-        if self.single_process:
-            options.add_argument('--single-process')
-        options.add_argument('--ignore-certificate-errors')
-        options.add_argument("--disable-plugins-discovery")
-        options.add_argument("--start-maximized")
-        if self.use_proxy:
-            options.add_argument(
-                f"--load-extension={os.path.join(os.path.dirname(os.path.abspath(__file__)), 'plugin', 'zenmate')}")
-        self.driver = uc.Chrome(headless=False, options=options, version_main=102)
-        if self.use_stealth:
-            stealth(self.driver,
-                    languages=["en-US", "en"],
-                    vendor="Google Inc.",
-                    platform="Win32",
-                    webgl_vendor="Intel Inc.",
-                    renderer="Intel Iris OpenGL Engine",
-                    fix_hairline=True,
-                    )
+        self.logger.info('Entering in new tab')
+        self.logger.debug('Opening new tab')
+        self.driver.switch_to.new_window()
+        self.logger.debug('Switching handle')
+        self.driver.switch_to.window(self.driver.window_handles[0])
+        self.logger.debug('Closing old tab')
+        self.driver.close()
+        self.logger.info('Switching handle 2')
+        self.driver.switch_to.window(self.driver.window_handles[0])
         self.get_data()
 
     def save_into_file(self):
@@ -94,8 +63,12 @@ class ScraperBase:
 
 class TrustpilotScraper(ScraperBase):
 
-    def __int__(self, url, outputpath):
-        super(TrustpilotScraper, self).__init__(url, outputpath, single_process=True)
+    def __int__(self, url, outputpath, driver):
+        super(TrustpilotScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'trustpilot'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -170,8 +143,12 @@ class TrustpilotScraper(ScraperBase):
 
 class FacebookScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(FacebookScraper, self).__init__(url, outputpath, single_process=True)
+    def __init__(self, url, outputpath, driver):
+        super(FacebookScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'facebook'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -221,8 +198,12 @@ class FacebookScraper(ScraperBase):
 
 class TwitterScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(TwitterScraper, self).__init__(url, outputpath, single_process=True)
+    def __init__(self, url, outputpath, driver):
+        super(TwitterScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'twitter'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -250,8 +231,12 @@ class TwitterScraper(ScraperBase):
 
 class LinkedinScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(LinkedinScraper, self).__init__(url, outputpath, use_stealth=True)
+    def __init__(self, url, outputpath, driver):
+        super(LinkedinScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'linkedin'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -281,8 +266,12 @@ class LinkedinScraper(ScraperBase):
 
 class YoutubeScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(YoutubeScraper, self).__init__(url, outputpath, single_process=True)
+    def __init__(self, url, outputpath, driver):
+        super(YoutubeScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'youtube'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -310,8 +299,12 @@ class YoutubeScraper(ScraperBase):
 
 class TiktokScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(TiktokScraper, self).__init__(url, outputpath, use_proxy=True)
+    def __init__(self, url, outputpath, driver):
+        super(TiktokScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'tiktok'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
@@ -346,8 +339,12 @@ class TiktokScraper(ScraperBase):
 
 class InstagramScraper(ScraperBase):
 
-    def __init__(self, url, outputpath):
-        super(InstagramScraper, self).__init__(url, outputpath, use_stealth=True)
+    def __init__(self, url, outputpath, driver):
+        super(InstagramScraper, self).__init__(url, outputpath, driver)
+
+    @staticmethod
+    def get_keyword():
+        return 'instagram'
 
     def get_data(self):
         self.logger.info('Starting scraping process')
