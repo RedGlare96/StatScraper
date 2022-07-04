@@ -1,7 +1,13 @@
 import time
 import logging
+from io import BytesIO
+import openpyxl.drawing.image
+import requests
 from bs4 import BeautifulSoup
+from requests import get
+from PIL import Image
 from openpyxl import Workbook, load_workbook, worksheet
+from openpyxl import drawing as dr
 import os
 
 
@@ -34,6 +40,15 @@ class ScraperBase:
         self.driver.switch_to.window(self.driver.window_handles[0])
         self.get_data()
 
+    def process_image(self, image_url):
+        ext = image_url.split('.')[-1]
+        self.logger.debug('Image ext: {}'.format(ext))
+        img_path = 'saved-image.{}'.format(ext)
+        r = requests.get(image_url.replace('imagesrc:', ''))
+        image = Image.open((BytesIO(r.content)))
+        image.save(img_path)
+        return img_path
+
     def save_into_file(self):
         '''
         Save data into file
@@ -41,29 +56,69 @@ class ScraperBase:
         logger = logging.getLogger(__name__ + '.SaveFile')
         if os.path.isfile(self.outputpath):
             wb = load_workbook(self.outputpath)
-            # ws = wb.active
             if self.get_keyword() not in wb.sheetnames:
                 logger.debug('Creating new sheet')
                 ws = wb.create_sheet(self.get_keyword())
+                for index, (key, value) in enumerate(self.output.items()):
+                    # Filling column titles
+                    ws.cell(row=1, column=index + 1, value=key)
+                    # Filling first row
+                    if 'imagesrc:' in value:
+                        try:
+                            logger.debug('Processing image')
+                            img = openpyxl.drawing.image.Image(self.process_image(value))
+                            cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), 2)
+                            logger.debug('Using cell: {}'.format(cell_name))
+                            ws.add_image(img, cell_name)
+                        except Exception as exc:
+                            logger.error('Error with image processing. Entering default value')
+                            logger.debug('Details: {}'.format(str(exc)))
+                            ws.cell(row=2, column=index + 1, value='N/A')
+                    else:
+                        ws.cell(row=2, column=index + 1, value=value)
             else:
                 ws = wb[self.get_keyword()]
-            next_row = len(ws['A']) + 1
-            for index, value in enumerate(self.output.values()):
-                ws.cell(row=next_row, column=index + 1, value=value)
-            logger.debug('Saving entry to: {0}'.format(self.outputpath))
-            wb.save(self.outputpath)
+                next_row = len(ws['A']) + 1
+                for index, value in enumerate(self.output.values()):
+                    if 'imagesrc:' in value:
+                        try:
+                            logger.debug('Processing image')
+                            img = openpyxl.drawing.image.Image(self.process_image(value))
+                            cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), next_row)
+                            logger.debug('Using cell: {}'.format(cell_name))
+                            ws.add_image(img, cell_name)
+                        except Exception as exc:
+                            logger.error('Error with image processing. Entering default value')
+                            logger.debug('Details: {}'.format(str(exc)))
+                            ws.cell(row=2, column=index + 1, value='N/A')
+                    else:
+                        ws.cell(row=next_row, column=index + 1, value=value)
         else:
             # Existing file with previous data not found. Assumed to be first time scraping
             logger.debug('New file created')
             wb = Workbook()
+            logger.debug('Creating new sheet')
             ws = wb.active
+            ws.title = self.get_keyword()
             for index, (key, value) in enumerate(self.output.items()):
                 # Filling column titles
                 ws.cell(row=1, column=index + 1, value=key)
                 # Filling first row
-                ws.cell(row=2, column=index + 1, value=value)
-            logger.debug('Saving entry to: {0}'.format(self.outputpath))
-            wb.save(self.outputpath)
+                if 'imagesrc:' in value:
+                    try:
+                        logger.debug('Processing image')
+                        img = openpyxl.drawing.image.Image(self.process_image(value))
+                        cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), 2)
+                        logger.debug('Using cell: {}'.format(cell_name))
+                        ws.add_image(img, cell_name)
+                    except Exception as exc:
+                        logger.error('Error with image processing. Entering default value')
+                        logger.debug('Details: {}'.format(str(exc)))
+                        ws.cell(row=2, column=index + 1, value='N/A')
+                else:
+                    ws.cell(row=2, column=index + 1, value=value)
+        logger.debug('Saving entry to: {0}'.format(self.outputpath))
+        wb.save(self.outputpath)
 
 
 class TrustpilotScraper(ScraperBase):
@@ -82,7 +137,7 @@ class TrustpilotScraper(ScraperBase):
         prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         try:
             logo_div = prod_soup.find('div', {'class': 'profile-image_imageWrapper__kDdWe'})
-            logo_image = logo_div.find_all('source')[1]['srcset'].split(',')[-1].replace('2x', '').strip()
+            logo_image = 'imagesrc:' + logo_div.find_all('source')[1]['srcset'].split(',')[-1].split()[0].strip()
             self.logger.debug('Logo image: {}'.format(logo_image))
             self.output['Logo Image'] = logo_image
         except Exception as exc:
@@ -125,7 +180,7 @@ class TrustpilotScraper(ScraperBase):
             star_range = rating_box.find('img')['alt']
             self.logger.debug('Star range: {}'.format(rating_box.find('img')['alt']))
             self.output['Star range'] = star_range
-            star_image = rating_box.find('img')['src']
+            star_image = 'imagesrc:' + rating_box.find('img')['src']
             self.logger.debug('Star Image: {}'.format(star_image))
             self.output['Star Image'] = star_image
         except Exception as exc:
@@ -180,9 +235,9 @@ class FacebookScraper(ScraperBase):
         follows1 = None
         follows2 = None
         try:
-            follows1 = 'Follows: {}'.format(prod_soup.find('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
+            follows1 = 'Follows: {}'.format(prod_soup.find_all('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
                                                                              ' lr9zc1uh jq4qci2q a3bd9o3v b1v8xokw'
-                                                                             ' oo9gr5id'}).text)
+                                                                             ' oo9gr5id'})[1].text)
             self.logger.debug('Follows 1: {}'.format(follows1))
             self.output['Follows1'] = follows1
             follows2 = prod_soup.find('a', {'class': 'oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv'
@@ -216,7 +271,7 @@ class TwitterScraper(ScraperBase):
         time.sleep(5)
         prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         try:
-            name = prod_soup.find_all('span', {'class': 'css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0'})[6].text
+            name = prod_soup.find_all('span', {'class': 'css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0'})[3].text
             self.logger.debug('Name: {}'.format(name))
             self.output['Name'] = name
         except Exception as exc:
@@ -359,6 +414,7 @@ class InstagramScraper(ScraperBase):
         try:
             title = prod_soup.find('h2').text
             self.logger.debug('Title: {}'.format(title))
+            self.output['Title'] = title
         except Exception as exc:
             self.logger.error('Could not get data')
             self.logger.debug('Details: {}'.format(str(exc)))

@@ -9,6 +9,7 @@ from selenium_stealth import stealth
 import os
 from os import path
 from scraper_meta import ScraperBase
+import traceback
 
 bin_dir = 'chrome-bin/chrome.exe'
 version_number = 102
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     check_create_dir('logs')
     log_timestamp = datetime.now()
     fileHandler = logging.FileHandler(
-        path.join('logs', 'CfdScraper{0}.log'.format(log_timestamp.strftime('%d-%m-%y-%H-%M-%S'))))
+        path.join('logs', 'StatScraper{0}.log'.format(log_timestamp.strftime('%d-%m-%y-%H-%M-%S'))))
     fileHandler.setFormatter(logging.Formatter('%(asctime)s:-[%(name)s] - %(levelname)s - %(message)s'))
     rootLogger.addHandler(consoleHandler)
     rootLogger.addHandler(fileHandler)
@@ -117,6 +118,7 @@ if __name__ == '__main__':
         except Exception as exc:
             rootLogger.error('Error with execution. Omitting link')
             rootLogger.debug('Details: {}'.format(str(exc)))
+            rootLogger.debug('Traceback: {}'.format(traceback.format_exc()))
     driver.close()
     driver.quit()
     rootLogger.info('Goodbye')
