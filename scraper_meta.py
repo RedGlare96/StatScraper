@@ -1,11 +1,10 @@
+from PIL import Image
 import time
 import logging
 from io import BytesIO
 import openpyxl.drawing.image
-import requests
 from bs4 import BeautifulSoup
 from requests import get
-from PIL import Image
 from openpyxl import Workbook, load_workbook, worksheet
 from openpyxl import drawing as dr
 import os
@@ -44,8 +43,9 @@ class ScraperBase:
         ext = image_url.split('.')[-1]
         self.logger.debug('Image ext: {}'.format(ext))
         img_path = 'saved-image.{}'.format(ext)
-        r = requests.get(image_url.replace('imagesrc:', ''))
+        r = get(image_url.replace('imagesrc:', ''))
         image = Image.open((BytesIO(r.content)))
+        image = image.resize((140, 90))
         image.save(img_path)
         return img_path
 
@@ -66,6 +66,9 @@ class ScraperBase:
                     if 'imagesrc:' in value:
                         try:
                             logger.debug('Processing image')
+                            logger.debug('Changing cell dimensions')
+                            ws.row_dimensions[2].height = 70
+                            ws.column_dimensions[chr(ord('@') + index + 1)].width = 20
                             img = openpyxl.drawing.image.Image(self.process_image(value))
                             cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), 2)
                             logger.debug('Using cell: {}'.format(cell_name))
@@ -73,7 +76,7 @@ class ScraperBase:
                         except Exception as exc:
                             logger.error('Error with image processing. Entering default value')
                             logger.debug('Details: {}'.format(str(exc)))
-                            ws.cell(row=2, column=index + 1, value='N/A')
+                            ws.cell(row=2, column=index + 1, value=value.replace('imagesrc:', ''))
                     else:
                         ws.cell(row=2, column=index + 1, value=value)
             else:
@@ -83,6 +86,9 @@ class ScraperBase:
                     if 'imagesrc:' in value:
                         try:
                             logger.debug('Processing image')
+                            logger.debug('Changing cell dimensions')
+                            ws.row_dimensions[next_row].height = 70
+                            ws.column_dimensions[chr(ord('@') + index + 1)].width = 20
                             img = openpyxl.drawing.image.Image(self.process_image(value))
                             cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), next_row)
                             logger.debug('Using cell: {}'.format(cell_name))
@@ -90,7 +96,7 @@ class ScraperBase:
                         except Exception as exc:
                             logger.error('Error with image processing. Entering default value')
                             logger.debug('Details: {}'.format(str(exc)))
-                            ws.cell(row=2, column=index + 1, value='N/A')
+                            ws.cell(row=next_row, column=index + 1, value=value.replace('imagesrc:', ''))
                     else:
                         ws.cell(row=next_row, column=index + 1, value=value)
         else:
@@ -107,6 +113,9 @@ class ScraperBase:
                 if 'imagesrc:' in value:
                     try:
                         logger.debug('Processing image')
+                        logger.debug('Changing cell dimensions')
+                        ws.row_dimensions[2].height = 70
+                        ws.column_dimensions[chr(ord('@') + index + 1)].width = 20
                         img = openpyxl.drawing.image.Image(self.process_image(value))
                         cell_name = '{0}{1}'.format(chr(ord('@') + index + 1), 2)
                         logger.debug('Using cell: {}'.format(cell_name))
@@ -114,7 +123,7 @@ class ScraperBase:
                     except Exception as exc:
                         logger.error('Error with image processing. Entering default value')
                         logger.debug('Details: {}'.format(str(exc)))
-                        ws.cell(row=2, column=index + 1, value='N/A')
+                        ws.cell(row=2, column=index + 1, value=value.replace('imagesrc:', ''))
                 else:
                     ws.cell(row=2, column=index + 1, value=value)
         logger.debug('Saving entry to: {0}'.format(self.outputpath))
@@ -271,7 +280,7 @@ class TwitterScraper(ScraperBase):
         time.sleep(5)
         prod_soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         try:
-            name = prod_soup.find_all('span', {'class': 'css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0'})[3].text
+            name = prod_soup.find_all('span', {'class': 'css-901oao css-16my406 r-poiln3 r-bcqeeo r-qvutc0'})[10].text
             self.logger.debug('Name: {}'.format(name))
             self.output['Name'] = name
         except Exception as exc:
