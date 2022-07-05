@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 from requests import get
 from openpyxl import Workbook, load_workbook, worksheet
 from openpyxl import drawing as dr
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPM
 import os
 
 
@@ -42,12 +44,23 @@ class ScraperBase:
     def process_image(self, image_url):
         ext = image_url.split('.')[-1]
         self.logger.debug('Image ext: {}'.format(ext))
-        img_path = 'saved-image.{}'.format(ext)
         r = get(image_url.replace('imagesrc:', ''))
-        image = Image.open((BytesIO(r.content)))
+        if ext == 'svg':
+            self.process_svg(BytesIO(r.content))
+            ext = 'png'
+            image = Image.open('saved-image.png')
+        else:
+            image = Image.open((BytesIO(r.content)))
+        img_path = 'saved-image.{}'.format(ext)
         image = image.resize((140, 90))
         image.save(img_path)
         return img_path
+
+    def process_svg(self, svg_bin):
+        self.logger.debug('Processing svg file')
+        drawing = svg2rlg(svg_bin)
+        self.logger.debug("Initiating rendering")
+        renderPM.drawToFile(drawing, 'saved-image.png', fmt='png')
 
     def save_into_file(self):
         '''
@@ -246,7 +259,7 @@ class FacebookScraper(ScraperBase):
         try:
             follows1 = 'Follows: {}'.format(prod_soup.find_all('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
                                                                              ' lr9zc1uh jq4qci2q a3bd9o3v b1v8xokw'
-                                                                             ' oo9gr5id'})[1].text)
+                                                                             ' oo9gr5id'})[2].text)
             self.logger.debug('Follows 1: {}'.format(follows1))
             self.output['Follows1'] = follows1
             follows2 = prod_soup.find('a', {'class': 'oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv'

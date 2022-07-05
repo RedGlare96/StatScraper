@@ -1,4 +1,3 @@
-import random
 from sys import stdout
 import logging
 from datetime import datetime
@@ -10,13 +9,13 @@ import os
 from os import path
 from scraper_meta import ScraperBase
 import traceback
+from configparser import ConfigParser
 
 bin_dir = 'chrome-bin/chrome.exe'
 version_number = 102
 use_proxy = True
 debug_mode = False
 link_list = 'link_list.xlsx'
-out_path = 'test1.xlsx'
 
 
 def check_create_dir(dirname):
@@ -39,6 +38,8 @@ def read_links(inputfile):
 
 
 if __name__ == '__main__':
+    print('StatScraper')
+
     # Init logging
     rootLogger = logging.getLogger()
     consoleHandler = logging.StreamHandler(stdout)
@@ -63,6 +64,26 @@ if __name__ == '__main__':
     fileHandler.setLevel(logging.DEBUG)
     consoleHandler.setFormatter(logging.Formatter('[%(name)s] - %(levelname)s - %(message)s'))
 
+    rootLogger.info('Reading config')
+    config = ConfigParser()
+    config.read('masterconfig.ini')
+    link_list = config['links']['link_file']
+    bin_dir = config['browser']['bin_dir']
+    version_number = int(config['browser']['version'])
+    use_proxy = config.getboolean('script_options', 'use_proxy')
+    debug_mode = config.getboolean('script_options', 'debug_mode')
+
+    rootLogger.debug('Starting config report')
+    rootLogger.debug('link_list: {}'.format(link_list))
+    rootLogger.debug('bin_dir: {}'.format(bin_dir))
+    rootLogger.debug('version_number: {}'.format(version_number))
+    rootLogger.debug('use_proxy: {}'.format(use_proxy))
+    rootLogger.debug('debug_mode: {}'.format(debug_mode))
+
+    rootLogger.debug('Preparing dump file')
+    check_create_dir('dump')
+    out_path = os.path.join('dump', 'ScrapedStats{}.xlsx'.format(log_timestamp.strftime('%d-%m-%y-%H-%M-%S')))
+
     if use_proxy:
         cookie_file = 'zenmate-cookies'
     else:
@@ -82,9 +103,7 @@ if __name__ == '__main__':
     options.add_argument("--disable-infobars")
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-browser-side-navigation')
-    # options.add_argument('--disable-extensions')
     options.add_argument('--log-level=0')
-    # options.add_argument('--single-process')
     options.add_argument('--ignore-certificate-errors')
     options.add_argument("--disable-plugins-discovery")
     options.add_argument("--start-maximized")
