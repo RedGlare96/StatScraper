@@ -247,7 +247,7 @@ class FacebookScraper(ScraperBase):
             self.output['Name'] = 'N/A'
         try:
             likes = prod_soup.find('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql lr9zc1uh jq4qci2q'
-                                                     ' a3bd9o3v b1v8xokw oo9gr5id'}).text
+                                                     ' a3bd9o3v b1v8xokw oo9gr5id'}).text.replace(' people', '')
             self.logger.debug('Likes: {}'.format(likes))
             self.output['Likes'] = likes
         except Exception as exc:
@@ -259,7 +259,8 @@ class FacebookScraper(ScraperBase):
         try:
             follows1 = 'Follows: {}'.format(prod_soup.find_all('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
                                                                              ' lr9zc1uh jq4qci2q a3bd9o3v b1v8xokw'
-                                                                             ' oo9gr5id'})[2].text)
+                                                                             ' oo9gr5id'})[2].text
+                                            .replace('Follows: ', '').replace(' people follow this', ''))
             self.logger.debug('Follows 1: {}'.format(follows1))
             self.output['Follows1'] = follows1
             follows2 = prod_soup.find('a', {'class': 'oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv'
@@ -369,7 +370,8 @@ class YoutubeScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            subscribers = prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text
+            subscribers = prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text\
+                .replace(' subscribers', '')
             self.logger.debug('Subscribers: {}'.format(subscribers))
             self.output['Subscribers'] = subscribers
         except Exception as exc:
