@@ -56,6 +56,15 @@ class ScraperBase:
         image.save(img_path)
         return img_path
 
+    @staticmethod
+    def process_number(numstr):
+        p_str = numstr.replace(',', '')
+        if 'K' in p_str:
+            p_str = str(float(p_str.replace('K', '')) * 1000)
+        if 'M' in p_str:
+            p_str = str(float(p_str.replace('M', '')) * 1000000)
+        return p_str
+
     def process_svg(self, svg_bin):
         self.logger.debug('Processing svg file')
         drawing = svg2rlg(svg_bin)
@@ -246,8 +255,8 @@ class FacebookScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            likes = prod_soup.find('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql lr9zc1uh jq4qci2q'
-                                                     ' a3bd9o3v b1v8xokw oo9gr5id'}).text.replace(' people', '')
+            likes = ScraperBase.process_number(prod_soup.find('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql lr9zc1uh jq4qci2q'
+                                                     ' a3bd9o3v b1v8xokw oo9gr5id'}).text.replace(' people', ''))
             self.logger.debug('Likes: {}'.format(likes))
             self.output['Likes'] = likes
         except Exception as exc:
@@ -257,16 +266,17 @@ class FacebookScraper(ScraperBase):
         follows1 = None
         follows2 = None
         try:
-            follows1 = 'Follows: {}'.format(prod_soup.find_all('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
+            follows1 = ScraperBase.process_number(prod_soup.find_all('span', {'class': 'd2edcug0 hpfvmrgz qv66sw1b c1et5uql'
                                                                              ' lr9zc1uh jq4qci2q a3bd9o3v b1v8xokw'
                                                                              ' oo9gr5id'})[2].text
-                                            .replace('Follows: ', '').replace(' people follow this', ''))
+                                                  .replace('Follows: ', '').replace(' people follow this', ''))
             self.logger.debug('Follows 1: {}'.format(follows1))
             self.output['Follows1'] = follows1
-            follows2 = prod_soup.find('a', {'class': 'oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv'
+            follows2 = ScraperBase.process_number(prod_soup.find('a', {'class': 'oajrlxb2 g5ia77u1 qu0x051f esr5mh6w e9989ue4 r7d6kgcz rq0escxv'
                                                      ' nhd2j8a9 nc684nl6 p7hjln8o kvgmc6g5 cxmmr5t8 oygrvhab'
                                                      ' hcukyx3x jb3vyjys rz4wbd8a qt6c0cv9 a8nywdso i1ao9s8h'
-                                                     ' esuyzwwr f1sip0of lzcic4wl gpro0wi8 m9osqain lrazzd5p'}).text
+                                                     ' esuyzwwr f1sip0of lzcic4wl gpro0wi8 m9osqain lrazzd5p'}).text\
+                .replace('Follows: ', '').replace(' people follow this', ''))
             self.logger.debug('Follows 2: {}'.format(follows2))
             self.output['Follows1'] = follows2
         except Exception as exc:
@@ -302,7 +312,7 @@ class TwitterScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            followers = prod_soup.find('span', string='Followers').find_previous().text
+            followers = ScraperBase.process_number(prod_soup.find('span', string='Followers').find_previous().text)
             self.logger.debug('Followers: {}'.format(followers))
             self.output['Followers'] = followers
         except Exception as exc:
@@ -336,8 +346,8 @@ class LinkedinScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            followers = prod_soup.find('h3', {'class': 'top-card-layout__first-subline font-sans text-md leading-open'
-                                                        ' text-color-text-low-emphasis'}).text.strip().split()[2]
+            followers = ScraperBase.process_number(prod_soup.find('h3', {'class': 'top-card-layout__first-subline font-sans text-md leading-open'
+                                                        ' text-color-text-low-emphasis'}).text.strip().split()[2])
             self.logger.debug('Followers: {}'.format(followers))
             self.output['Followers'] = followers
         except Exception as exc:
@@ -370,8 +380,8 @@ class YoutubeScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            subscribers = prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text\
-                .replace(' subscribers', '')
+            subscribers = ScraperBase.process_number(prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text\
+                .replace(' subscribers', ''))
             self.logger.debug('Subscribers: {}'.format(subscribers))
             self.output['Subscribers'] = subscribers
         except Exception as exc:
@@ -404,14 +414,17 @@ class TiktokScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            followers = prod_soup.find_all('div', {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})[1].find('strong').text
+            followers = ScraperBase.process_number(prod_soup.find_all('div',
+                                                                      {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})[1]
+                                                   .find('strong').text)
             self.logger.debug('Followers: {}'.format(followers))
         except Exception as exc:
             self.logger.error('Could not get data')
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Followers'] = 'N/A'
         try:
-            likes = prod_soup.find_all('div', {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})[2].find('strong').text
+            likes = ScraperBase.process_number(prod_soup.find_all('div', {'class': 'tiktok-xeexlu-DivNumber e1457k4r1'})
+                                               [2].find('strong').text)
             self.logger.debug('Likes: {}'.format(likes))
             self.output['Likes'] = likes
         except Exception as exc:
@@ -444,7 +457,8 @@ class InstagramScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Title'] = 'N/A'
         try:
-            followers = prod_soup.find_all('li', {'class': 'Y8-fY'})[1].find('span')['title']
+            followers = ScraperBase.process_number(prod_soup.find_all('li', {'class': '_aa_5'})[1]
+                                                   .find('span')['title'])
             self.logger.debug('Followers: {}'.format(followers))
         except Exception as exc:
             self.logger.error('Could not get data')
