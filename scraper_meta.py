@@ -59,10 +59,10 @@ class ScraperBase:
     @staticmethod
     def process_number(numstr):
         p_str = numstr.replace(',', '')
-        if 'K' in p_str:
-            p_str = str(float(p_str.replace('K', '')) * 1000)
-        if 'M' in p_str:
-            p_str = str(float(p_str.replace('M', '')) * 1000000)
+        if 'K' in p_str.lower():
+            p_str = str(float(p_str.replace('K', '').replace('k', '')) * 1000)
+        if 'M' in p_str.lower():
+            p_str = str(float(p_str.replace('M', '').replace('m', '')) * 1000000)
         return p_str
 
     def process_svg(self, svg_bin):

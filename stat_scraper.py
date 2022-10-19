@@ -73,6 +73,8 @@ if __name__ == '__main__':
     use_proxy = config.getboolean('script_options', 'use_proxy')
     debug_mode = config.getboolean('script_options', 'debug_mode')
 
+    rootLogger.debug(f'Version: 19-10-22(1)')
+
     rootLogger.debug('Starting config report')
     rootLogger.debug('link_list: {}'.format(link_list))
     rootLogger.debug('bin_dir: {}'.format(bin_dir))
