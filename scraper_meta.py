@@ -59,10 +59,10 @@ class ScraperBase:
     @staticmethod
     def process_number(numstr):
         p_str = numstr.replace(',', '')
-        if 'K' in p_str.lower():
-            p_str = str(float(p_str.replace('K', '').replace('k', '')) * 1000)
-        if 'M' in p_str.lower():
-            p_str = str(float(p_str.replace('M', '').replace('m', '')) * 1000000)
+        if 'k' in p_str.lower():
+            p_str = str(int(float(p_str.replace('K', '').replace('k', '')) * 1000))
+        if 'm' in p_str.lower():
+            p_str = str(int(float(p_str.replace('M', '').replace('m', '')) * 1000000))
         return p_str
 
     def process_svg(self, svg_bin):
@@ -185,11 +185,13 @@ class TrustpilotScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            tot_rew = main_div.find('span', {'class': 'typography_typography__QgicV typography'
-                                                                         '_bodysmall__irytL typography_color-gray-7__9Ut3K'
-                                                                         ' typography_weight-regular__TWEnf typography'
-                                                                         '_fontstyle-normal__kHyN3'
-                                                      ' styles_text__W4hWi'}).text.split()[0].strip()
+            '''
+            tot_rew = main_div.find('p', {'class': 'typography_body-l__KUYFJ'
+                                                   ' typography_appearance-default__AAY17'}).text.split()[0].strip()
+            '''
+            tot_rew = prod_soup.find('div', {'class': 'styles_mainContent__nFxAv'})\
+                .find('div', {'class': 'paper_paper__1PY90 paper_outline__lwsUX card_card__lQWDv'
+                                       ' styles_reviewsOverview__mVIJQ'}).find_all('p')[0].text.split()[0].strip()
             self.logger.debug('Total Reviews: {}'.format(tot_rew))
             self.output['Total Reviews'] = tot_rew
         except Exception as exc:
@@ -380,8 +382,9 @@ class YoutubeScraper(ScraperBase):
             self.logger.debug('Details: {}'.format(str(exc)))
             self.output['Name'] = 'N/A'
         try:
-            subscribers = ScraperBase.process_number(prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text\
-                .replace(' subscribers', ''))
+            subs = prod_soup.find('yt-formatted-string', {'id': 'subscriber-count'}).text\
+                .replace(' subscribers', '')
+            subscribers = ScraperBase.process_number(subs)
             self.logger.debug('Subscribers: {}'.format(subscribers))
             self.output['Subscribers'] = subscribers
         except Exception as exc:
